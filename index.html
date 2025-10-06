@@ -1,81 +1,410 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Weather Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft 红石逻辑与元件指南</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f7fa; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #1a1a2e;
+            color: #e6e6e6;
+            line-height: 1.6;
+        }
+        
         .container {
-            max-width: 400px;
-            margin: 60px auto;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #8B0000 0%, #5a0000 100%);
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            color: #ffcc00;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ffcc99;
+        }
+        
+        .intro {
+            background-color: #2d2d44;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .intro h2 {
+            color: #ff6666;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ff6666;
+            padding-bottom: 8px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: #2d2d44;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-header {
+            background-color: #8B0000;
+            padding: 15px;
             text-align: center;
         }
-        h1 { color: #0077b6; }
-        #weather { margin-top: 24px; }
-        input[type="text"] {
+        
+        .card-header h3 {
+            color: #ffcc00;
+            margin: 0;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .card-body p {
+            margin-bottom: 15px;
+        }
+        
+        .logic-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+        
+        .logic-table th, .logic-table td {
+            border: 1px solid #555;
             padding: 8px;
-            width: 70%;
-            font-size: 1em;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+            text-align: center;
         }
-        button {
-            padding: 8px 14px;
-            font-size: 1em;
-            border-radius: 4px;
-            border: none;
-            background: #0077b6;
-            color: white;
-            cursor: pointer;
+        
+        .logic-table th {
+            background-color: #5a0000;
+            color: #ffcc00;
         }
-        button:hover { background: #023e8a; }
-        .error { color: #d32f2f; margin-top: 10px; }
+        
+        .logic-table td {
+            background-color: #3d3d5c;
+        }
+        
+        .true {
+            color: #00cc00;
+            font-weight: bold;
+        }
+        
+        .false {
+            color: #ff3333;
+            font-weight: bold;
+        }
+        
+        .components {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .component {
+            background-color: #3d3d5c;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .component-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ffcc00;
+        }
+        
+        .component h4 {
+            color: #ff9999;
+            margin-bottom: 10px;
+        }
+        
+        .example {
+            background-color: #3d3d5c;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .example h3 {
+            color: #ffcc00;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ffcc00;
+            padding-bottom: 8px;
+        }
+        
+        .code-block {
+            background-color: #2d2d44;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 15px 0;
+            border-left: 4px solid #ffcc00;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 1px solid #555;
+            color: #aaa;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Weather Dashboard</h1>
-        <input type="text" id="cityInput" placeholder="Enter city name" />
-        <button onclick="getWeather()">Get Weather</button>
-        <div id="weather"></div>
-        <div class="error" id="error"></div>
+        <header>
+            <h1>Minecraft 红石逻辑与元件指南</h1>
+            <p class="subtitle">从基础到高级的红石电路设计与实现</p>
+        </header>
+        
+        <section class="intro">
+            <h2>什么是红石？</h2>
+            <p>红石是Minecraft中的一种特殊材料，可以传递信号并创建复杂的电路系统。类似于现实世界中的电子电路，红石系统允许玩家构建自动化的机械装置、逻辑门电路和复杂的计算设备。</p>
+            <p>红石信号可以通过红石线传输，强度会随距离衰减（每格减少1），最大传输距离为15格。红石元件可以产生、传输、接收或修改红石信号。</p>
+        </section>
+        
+        <h2 style="color: #ffcc00; margin-bottom: 20px;">红石逻辑门</h2>
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>与门 (AND)</h3>
+                </div>
+                <div class="card-body">
+                    <p>当所有输入都为真时，输出为真。</p>
+                    <table class="logic-table">
+                        <tr>
+                            <th>输入A</th>
+                            <th>输入B</th>
+                            <th>输出</th>
+                        </tr>
+                        <tr>
+                            <td class="false">0</td>
+                            <td class="false">0</td>
+                            <td class="false">0</td>
+                        </tr>
+                        <tr>
+                            <td class="false">0</td>
+                            <td class="true">1</td>
+                            <td class="false">0</td>
+                        </tr>
+                        <tr>
+                            <td class="true">1</td>
+                            <td class="false">0</td>
+                            <td class="false">0</td>
+                        </tr>
+                        <tr>
+                            <td class="true">1</td>
+                            <td class="true">1</td>
+                            <td class="true">1</td>
+                        </tr>
+                    </table>
+                    <p><strong>实现方式：</strong>两个输入连接到同一个方块，红石火把提供输出。</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>或门 (OR)</h3>
+                </div>
+                <div class="card-body">
+                    <p>当至少一个输入为真时，输出为真。</p>
+                    <table class="logic-table">
+                        <tr>
+                            <th>输入A</th>
+                            <th>输入B</th>
+                            <th>输出</th>
+                        </tr>
+                        <tr>
+                            <td class="false">0</td>
+                            <td class="false">0</td>
+                            <td class="false">0</td>
+                        </tr>
+                        <tr>
+                            <td class="false">0</td>
+                            <td class="true">1</td>
+                            <td class="true">1</td>
+                        </tr>
+                        <tr>
+                            <td class="true">1</td>
+                            <td class="false">0</td>
+                            <td class="true">1</td>
+                        </tr>
+                        <tr>
+                            <td class="true">1</td>
+                            <td class="true">1</td>
+                            <td class="true">1</td>
+                        </tr>
+                    </table>
+                    <p><strong>实现方式：</strong>两个输入直接连接到输出，使用红石线连接。</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>非门 (NOT)</h3>
+                </div>
+                <div class="card-body">
+                    <p>输出与输入相反。</p>
+                    <table class="logic-table">
+                        <tr>
+                            <th>输入</th>
+                            <th>输出</th>
+                        </tr>
+                        <tr>
+                            <td class="false">0</td>
+                            <td class="true">1</td>
+                        </tr>
+                        <tr>
+                            <td class="true">1</td>
+                            <td class="false">0</td>
+                        </tr>
+                    </table>
+                    <p><strong>实现方式：</strong>红石火把放置在方块侧面或顶部。</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>异或门 (XOR)</h3>
+                </div>
+                <div class="card-body">
+                    <p>当输入不同时，输出为真。</p>
+                    <table class="logic-table">
+                        <tr>
+                            <th>输入A</th>
+                            <th>输入B</th>
+                            <th>输出</th>
+                        </tr>
+                        <tr>
+                            <td class="false">0</td>
+                            <td class="false">0</td>
+                            <td class="false">0</td>
+                        </tr>
+                        <tr>
+                            <td class="false">0</td>
+                            <td class="true">1</td>
+                            <td class="true">1</td>
+                        </tr>
+                        <tr>
+                            <td class="true">1</td>
+                            <td class="false">0</td>
+                            <td class="true">1</td>
+                        </tr>
+                        <tr>
+                            <td class="true">1</td>
+                            <td class="true">1</td>
+                            <td class="false">0</td>
+                        </tr>
+                    </table>
+                    <p><strong>实现方式：</strong>结合与门、或门和非门构建。</p>
+                </div>
+            </div>
+        </div>
+        
+        <h2 style="color: #ffcc00; margin: 30px 0 20px;">常用红石元件</h2>
+        <div class="components">
+            <div class="component">
+                <div class="component-icon">🔴</div>
+                <h4>红石线</h4>
+                <p>传输红石信号，最大传输距离15格。</p>
+            </div>
+            
+            <div class="component">
+                <div class="component-icon">🔥</div>
+                <h4>红石火把</h4>
+                <p>提供持续信号，当被激活时熄灭。</p>
+            </div>
+            
+            <div class="component">
+                <div class="component-icon">⏱️</div>
+                <h4>中继器</h4>
+                <p>延长信号距离，添加延迟，防止信号回流。</p>
+            </div>
+            
+            <div class="component">
+                <div class="component-icon">⚖️</div>
+                <h4>比较器</h4>
+                <p>比较信号强度，检测容器状态。</p>
+            </div>
+            
+            <div class="component">
+                <div class="component-icon">🎚️</div>
+                <h4>红石块</h4>
+                <p>永久激活的红石电源。</p>
+            </div>
+            
+            <div class="component">
+                <div class="component-icon">🚪</div>
+                <h4>活塞</h4>
+                <p>推动方块，用于机械装置。</p>
+            </div>
+        </div>
+        
+        <section class="example">
+            <h3>红石电路示例：自动门</h3>
+            <p>以下是一个简单的压力板自动门红石电路设计：</p>
+            <div class="code-block">
+                1. 在门两侧各放置一个粘性活塞<br>
+                2. 在门前放置压力板<br>
+                3. 从压力板下方挖一条1格深的通道<br>
+                4. 在通道中铺设红石线连接到粘性活塞<br>
+                5. 在红石线中间放置一个红石火把作为非门<br>
+                6. 当玩家踩上压力板，信号通过非门反转，激活活塞打开门
+            </div>
+            <p>这个简单的电路利用了红石火把的非门功能，将压力板的激活信号转换为活塞的激活信号。</p>
+        </section>
+        
+        <footer>
+            <p>Minecraft 红石逻辑与元件指南 &copy; 2023 | 本页面仅供学习参考</p>
+        </footer>
     </div>
-    <script>
-        async function getWeather() {
-            const city = document.getElementById('cityInput').value;
-            const weatherDiv = document.getElementById('weather');
-            const errorDiv = document.getElementById('error');
-            weatherDiv.innerHTML = '';
-            errorDiv.textContent = '';
-
-            if (!city) {
-                errorDiv.textContent = 'Please enter a city name.';
-                return;
-            }
-
-            const apiKey = 'YOUR_API_KEY'; // Replace with your OpenWeatherMap API key
-            const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
-
-            try {
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('City not found');
-                const data = await res.json();
-                weatherDiv.innerHTML = `
-                    <h2>${data.name}, ${data.sys.country}</h2>
-                    <p><strong>Temperature:</strong> ${data.main.temp}°C</p>
-                    <p><strong>Weather:</strong> ${data.weather[0].description}</p>
-                    <p><strong>Humidity:</strong> ${data.main.humidity}%</p>
-                    <p><strong>Wind Speed:</strong> ${data.wind.speed} m/s</p>
-                `;
-            } catch (err) {
-                errorDiv.textContent = 'Unable to fetch weather data. Please check the city name and try again.';
-            }
-        }
-    </script>
 </body>
 </html>
