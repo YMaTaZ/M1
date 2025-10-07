@@ -3,86 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Singapore PSI Readings</title>
+  <title>PSI Debug Version</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background-color: #f5f7fa;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    #controls {
-      text-align: center;
-      margin: 20px 0;
-    }
-    button {
-      background-color: #0078d7;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #005fa3;
-    }
-    #status {
-      text-align: center;
-      margin-bottom: 10px;
-      color: #666;
-    }
-    .status-ok {
-      color: green;
-    }
-    .status-fail {
-      color: red;
-    }
-    #timestamps {
-      text-align: center;
-      color: #666;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: white;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background-color: #e8f0fe;
-    }
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
+    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f7fa; }
+    h1 { text-align: center; color: #333; }
+    #controls { text-align: center; margin: 20px 0; }
+    button { background-color: #0078d7; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; }
+    button:hover { background-color: #005fa3; }
+    #status { text-align: center; margin-bottom: 10px; color: #666; }
+    .status-ok { color: green; }
+    .status-fail { color: red; }
+    #timestamps { text-align: center; color: #666; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; background-color: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background-color: #e8f0fe; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
   </style>
 </head>
 <body>
-  <h1>Singapore PSI Readings (Realtime)</h1>
-
+  <h1>Singapore PSI Readings (Debug)</h1>
   <div id="controls">
     <button id="refreshBtn">🔄 Refresh Data</button>
   </div>
-
   <div id="status">API Status: —</div>
   <div id="timestamps">
     <div id="apiTimestamp">Data timestamp: —</div>
     <div id="refreshTime">Refreshed at: —</div>
   </div>
-
   <table id="psi-table">
     <thead></thead>
     <tbody></tbody>
   </table>
 
   <script>
+    console.log("Script start");  // debug
+
     const FIELD_ORDER = [
       "o3_sub_index",
       "pm10_twenty_four_hourly",
@@ -97,16 +52,114 @@
       "psi_twenty_four_hourly"
     ];
 
-    // 用来记录上次 API timestamp，以判断这次是否有新的数据
     loadPSIData.lastTimestamp = null;
 
     async function loadPSIData() {
+      console.log("loadPSIData called");
       const statusDiv = document.getElementById("status");
       const apiTsDiv = document.getElementById("apiTimestamp");
       const refreshDiv = document.getElementById("refreshTime");
       const table = document.getElementById("psi-table");
       const thead = table.querySelector("thead");
-      const tbody =
+      const tbody = table.querySelector("tbody");
+
+      statusDiv.innerText = "API Status: Loading...";
+      statusDiv.className = "";
+      apiTsDiv.innerText = "Data timestamp: —";
+      refreshDiv.innerText = "Refreshed at: —";
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+
+      try {
+        const resp = await fetch('https://api.data.gov.sg/v1/environment/psi');
+        console.log("fetch done, resp:", resp);
+        if (!resp.ok) {
+          throw new Error("HTTP status " + resp.status);
+        }
+        const data = await resp.json();
+        console.log("parsed json data:", data);
+
+        if (!data.items || data.items.length === 0) {
+          throw new Error("No items");
+        }
+        const item = data.items[0];
+        console.log("item:", item);
+        console.log("response items[0].update_timestamp:", item.update_timestamp);
+
+        statusDiv.innerText = "API Status: Success";
+        statusDiv.classList.add("status-ok");
+
+        const readings = item.readings;
+        const updated = item.update_timestamp;
+
+        if (updated) {
+          apiTsDiv.innerText = `Data timestamp: ${ new Date(updated).toLocaleString() }`;
+        } else {
+          apiTsDiv.innerText = "Data timestamp: (none)";
+        }
+
+        const now = new Date();
+        refreshDiv.innerText = `Refreshed at: ${ now.toLocaleString() }`;
+
+        if (loadPSIData.lastTimestamp !== null) {
+          if (loadPSIData.lastTimestamp === updated) {
+            statusDiv.innerText += " — No new data";
+          } else {
+            statusDiv.innerText += " — Data updated";
+          }
+        }
+        loadPSIData.lastTimestamp = updated;
+
+        if (!readings || !readings.psi_twenty_four_hourly) {
+          throw new Error("Malformed readings data");
+        }
+        const regions = Object.keys(readings.psi_twenty_four_hourly);
+        console.log("regions:", regions);
+
+        let headerHtml = `<tr><th>Reading Type</th>`;
+        regions.forEach(region => {
+          headerHtml += `<th>${region}</th>`;
+        });
+        headerHtml += `</tr>`;
+        thead.innerHTML = headerHtml;
+
+        let bodyHtml = "";
+        FIELD_ORDER.forEach(type => {
+          console.log("type:", type, "readings[type]:", readings[type]);
+          if (readings[type]) {
+            let row = `<tr><td>${type}</td>`;
+            regions.forEach(region => {
+              const val = readings[type][region];
+              row += `<td>${val !== undefined ? val : ''}</td>`;
+            });
+            row += `</tr>`;
+            bodyHtml += row;
+          } else {
+            console.warn(`Missing readings field: ${type}`);
+          }
+        });
+        tbody.innerHTML = bodyHtml;
+
+      } catch (err) {
+        console.error("Error in loadPSIData:", err);
+        statusDiv.innerText = "API Status: Failed";
+        statusDiv.classList.add("status-fail");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("DOMContentLoaded");
+      const btn = document.getElementById("refreshBtn");
+      if (btn) {
+        btn.addEventListener("click", loadPSIData);
+      } else {
+        console.warn("refreshBtn not found");
+      }
+      loadPSIData();
+    });
+  </script>
+</body>
+</html>
 
 
 
