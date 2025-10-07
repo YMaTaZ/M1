@@ -1,360 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Singapore PSI Readings - data.gov.sg</title>
-    <style>
-        /* 基础样式重置与全局设置 */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
-        
-        /* 标题样式 */
-        .page-title { 
-            font-size: 1.8rem; 
-            font-weight: 600; 
-            color: #2d3748; 
-            margin-bottom: 12px; 
-            border-left: 4px solid #007bff; 
-            padding-left: 10px; 
-        }
-        
-        /* 数据信息栏（时间戳+来源） */
-        .data-info { 
-            background-color: #f8f9fa; 
-            padding: 12px 15px; 
-            border-radius: 6px; 
-            margin-bottom: 18px; 
-            font-size: 0.95rem; 
-            color: #4a5568; 
-        }
-        .data-info span { margin-right: 20px; }
-        .data-source { color: #667eea; font-weight: 500; }
-        
-        /* 按钮组样式 */
-        .btn-group { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
-        .btn { 
-            padding: 9px 18px; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 0.95rem; 
-            transition: background-color 0.2s; 
-        }
-        #refreshBtn { background-color: #007bff; color: white; }
-        #refreshBtn:hover { background-color: #0056b3; }
-        #langSwitchBtn { background-color: #28a745; color: white; }
-        #langSwitchBtn:hover { background-color: #218838; }
-        .btn:disabled { 
-            background-color: #6c757d; 
-            cursor: not-allowed; 
-            opacity: 0.8; 
-        }
-        #loadingMsg { 
-            font-size: 0.9rem; 
-            color: #28a745; 
-            margin-left: 8px; 
-            display: none; 
-        }
-        .error-msg {
-            color: #dc3545;
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #f8d7da;
-            border-radius: 4px;
-            display: none;
-        }
-        .error-details {
-            font-size: 0.9rem;
-            margin-top: 5px;
-            padding-top: 5px;
-            border-top: 1px dashed #dc3545;
-            display: none;
-        }
-        
-        /* 表格响应式处理 */
-        .table-container { 
-            overflow-x: auto; /* 小屏幕横向滚动 */
-            border-radius: 6px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-        }
-        table { 
-            border-collapse: collapse; 
-            width: 100%; 
-            margin: 0; 
-        }
-        th { 
-            background-color: #e9ecef; 
-            font-weight: 600; 
-            color: #2d3748; 
-            text-align: left; 
-            padding: 14px 15px; 
-            border-bottom: 2px solid #dee2e6; 
-        }
-        td { 
-            padding: 14px 15px; 
-            border-bottom: 1px solid #dee2e6; 
-            color: #2d3748; 
-        }
-        tbody tr:hover { background-color: #f8f9fa; } /* 行hover效果 */
-        
-        /* 适配移动端 */
-        @media (max-width: 768px) {
-            .page-title { font-size: 1.5rem; }
-            .data-info { flex-direction: column; gap: 8px; }
-            .data-info span { margin-right: 0; display: block; }
-            .btn-group { flex-wrap: wrap; }
-            .btn { padding: 8px 14px; font-size: 0.9rem; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Singapore PSI Readings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f5f7fa;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    #controls {
+      text-align: center;
+      margin: 20px 0;
+    }
+    button {
+      background-color: #0078d7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #e8f0fe;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    #updated {
+      text-align: center;
+      color: #666;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-    <!-- 页面标题 -->
-    <h1 class="page-title lang-en">Singapore PSI Readings</h1>
-    <h1 class="page-title lang-zh" style="display: none;">新加坡空气污染指数（PSI）读数</h1>
+  <h1>Singapore PSI Readings (Realtime)</h1>
 
-    <!-- 数据信息栏（时间戳+来源） -->
-    <div class="data-info">
-        <span class="lang-en">Data Timestamp: <strong>2025-10-06T19:00:00+08:00</strong></span>
-        <span class="lang-zh" style="display: none;">数据时间戳: <strong>2025-10-06T19:00:00+08:00</strong></span>
-        
-        <span class="lang-en">Last Updated: <strong>2025-10-06T19:00:51+08:00</strong></span>
-        <span class="lang-zh" style="display: none;">最后更新时间: <strong>2025-10-06T19:00:51+08:00</strong></span>
-        
-        <span class="data-source lang-en">(Data Source: data.gov.sg API)</span>
-        <span class="data-source lang-zh" style="display: none;">（数据来源: data.gov.sg API）</span>
-    </div>
+  <div id="controls">
+    <button id="refreshBtn">🔄 Refresh Data</button>
+    <div id="updated">Loading data...</div>
+  </div>
 
-    <!-- 功能按钮组 -->
-    <div class="btn-group">
-        <button id="refreshBtn" class="btn" onclick="refreshPSI()">
-            <span class="lang-en">Refresh Data</span>
-            <span class="lang-zh" style="display: none;">刷新数据</span>
-        </button>
-        <button id="langSwitchBtn" class="btn" onclick="switchLanguage()">
-            <span class="lang-en">Switch to Chinese</span>
-            <span class="lang-zh" style="display: none;">切换为英文</span>
-        </button>
-        <span id="loadingMsg">
-            <span class="lang-en">Refreshing data...</span>
-            <span class="lang-zh" style="display: none;">数据刷新中...</span>
-        </span>
-    </div>
-    
-    <!-- 错误消息显示区域 -->
-    <div class="error-msg" id="errorMsg">
-        <span class="lang-en">Failed to load data. Please try again later.</span>
-        <span class="lang-zh" style="display: none;">数据加载失败，请稍后重试。</span>
-        <button class="details-toggle btn btn-sm" style="margin-top: 8px; padding: 4px 8px; font-size: 0.8rem; background-color: #dc3545;" onclick="toggleErrorDetails()">
-            <span class="lang-en">Show Details</span>
-            <span class="lang-zh" style="display: none;">显示详情</span>
-        </button>
-        <div class="error-details" id="errorDetails"></div>
-    </div>
+  <table id="psi-table">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
 
-    <!-- 表格容器（响应式） -->
-    <div class="table-container">
-        <table id="psiTable">
-            <thead>
-                <tr>
-                    <th><span class="lang-en">Reading Type</span><span class="lang-zh" style="display: none;">读数类型</span></th>
-                    <th><span class="lang-en">West</span><span class="lang-zh" style="display: none;">西部地区</span></th>
-                    <th><span class="lang-en">East</span><span class="lang-zh" style="display: none;">东部地区</span></th>
-                    <th><span class="lang-en">Central</span><span class="lang-zh" style="display: none;">中部地区</span></th>
-                    <th><span class="lang-en">South</span><span class="lang-zh" style="display: none;">南部地区</span></th>
-                    <th><span class="lang-en">North</span><span class="lang-zh" style="display: none;">北部地区</span></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td><span class="lang-en">o3_sub_index</span><span class="lang-zh" style="display: none;">臭氧分项指数</span></td><td>3</td><td>15</td><td>9</td><td>8</td><td>14</td></tr>
-                <tr><td><span class="lang-en">pm10_twenty_four_hourly</span><span class="lang-zh" style="display: none;">PM10 24小时均值</span></td><td>26</td><td>33</td><td>32</td><td>26</td><td>23</td></tr>
-                <tr><td><span class="lang-en">pm10_sub_index</span><span class="lang-zh" style="display: none;">PM10分项指数</span></td><td>26</td><td>33</td><td>32</td><td>26</td><td>23</td></tr>
-                <tr><td><span class="lang-en">co_sub_index</span><span class="lang-zh" style="display: none;">一氧化碳分项指数</span></td><td>3</td><td>4</td><td>2</td><td>4</td><td>4</td></tr>
-                <tr><td><span class="lang-en">pm25_twenty_four_hourly</span><span class="lang-zh" style="display: none;">PM2.5 24小时均值</span></td><td>18</td><td>20</td><td>22</td><td>14</td><td>16</td></tr>
-                <tr><td><span class="lang-en">so2_sub_index</span><span class="lang-zh" style="display: none;">二氧化硫分项指数</span></td><td>3</td><td>2</td><td>4</td><td>2</td><td>7</td></tr>
-                <tr><td><span class="lang-en">co_eight_hour_max</span><span class="lang-zh" style="display: none;">一氧化碳8小时最大值</span></td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
-                <tr><td><span class="lang-en">no2_one_hour_max</span><span class="lang-zh" style="display: none;">二氧化氮1小时最大值</span></td><td>46</td><td>27</td><td>34</td><td>25</td><td>25</td></tr>
-                <tr><td><span class="lang-en">so2_twenty_four_hourly</span><span class="lang-zh" style="display: none;">二氧化硫24小时均值</span></td><td>5</td><td>4</td><td>6</td><td>3</td><td>10</td></tr>
-                <tr><td><span class="lang-en">pm25_sub_index</span><span class="lang-zh" style="display: none;">PM2.5分项指数</span></td><td>58</td><td>59</td><td>62</td><td>53</td><td>56</td></tr>
-                <tr><td><span class="lang-en">psi_twenty_four_hourly</span><span class="lang-zh" style="display: none;">24小时空气污染指数（PSI）</span></td><td>58</td><td>59</td><td>62</td><td>53</td><td>56</td></tr>
-                <tr><td><span class="lang-en">o3_eight_hour_max</span><span class="lang-zh" style="display: none;">臭氧8小时最大值</span></td><td>7</td><td>34</td><td>21</td><td>20</td><td>34</td></tr>
-            </tbody>
-        </table>
-    </div>
+  <script>
+    async function loadPSIData() {
+      try {
+        document.getElementById("updated").innerText = "Loading data...";
+        const response = await fetch('https://api.data.gov.sg/v1/environment/psi');
+        const data = await response.json();
 
-    <script>
-        let isEnglish = true;
-        let retryCount = 0;
-        const maxRetries = 2;
+        const updated = data.items[0].update_timestamp;
+        const readings = data.items[0].readings;
 
-        // 中英文切换逻辑
-        function switchLanguage() {
-            isEnglish = !isEnglish;
-            // 切换所有双语元素显示状态
-            document.querySelectorAll('.lang-en').forEach(el => {
-                el.style.display = isEnglish ? 'inline' : 'none';
-            });
-            document.querySelectorAll('.lang-zh').forEach(el => {
-                el.style.display = isEnglish ? 'none' : 'inline';
-            });
-            // 更新页面标题
-            document.title = isEnglish 
-                ? 'Singapore PSI Readings - data.gov.sg' 
-                : '新加坡空气污染指数（PSI）读数 - data.gov.sg';
-        }
+        document.getElementById("updated").innerText = `Last updated: ${new Date(updated).toLocaleString()}`;
 
-        // 切换错误详情显示
-        function toggleErrorDetails() {
-            const details = document.getElementById('errorDetails');
-            details.style.display = details.style.display === 'block' ? 'none' : 'block';
-        }
+        const regions = Object.keys(readings.psi_twenty_four_hourly);
+        const readingTypes = Object.keys(readings);
 
-        // 检查网络连接状态
-        function checkNetworkStatus() {
-            if (!navigator.onLine) {
-                throw new Error('No internet connection. Please check your network.');
-            }
-        }
+        const table = document.getElementById("psi-table");
+        const thead = table.querySelector("thead");
+        const tbody = table.querySelector("tbody");
 
-        // 数据刷新逻辑
-        function refreshPSI() {
-            const refreshBtn = document.getElementById('refreshBtn');
-            const loadingMsg = document.getElementById('loadingMsg');
-            const errorMsg = document.getElementById('errorMsg');
-            const errorDetails = document.getElementById('errorDetails');
-            
-            // 重置状态
-            refreshBtn.disabled = true;
-            loadingMsg.style.display = 'inline';
-            errorMsg.style.display = 'none';
-            errorDetails.style.display = 'none';
-            errorDetails.innerHTML = '';
+        // 清空旧表格
+        thead.innerHTML = "";
+        tbody.innerHTML = "";
 
-            try {
-                // 检查网络连接
-                checkNetworkStatus();
-                
-                // 使用真实API请求
-                fetch('https://api.data.gov.sg/v1/environment/psi', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'User-Agent': 'PSI Reader/1.0'
-                    },
-                    mode: 'cors',
-                    cache: 'no-store'
-                })
-                .then(res => {
-                    if (!res.ok) {
-                        // 提取HTTP错误信息
-                        return res.text().then(text => {
-                            throw new Error(`HTTP error! Status: ${res.status}\nResponse: ${text}`);
-                        });
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    // 重置重试计数
-                    retryCount = 0;
-                    
-                    // 验证API返回数据结构
-                    if (!data || !data.items || !data.items.length || !data.items[0].readings) {
-                        throw new Error('Invalid data structure from API');
-                    }
-                    
-                    const readings = data.items[0].readings;
-                    const regions = ['west', 'east', 'central', 'south', 'north'];
-                    const tbody = document.querySelector('#psiTable tbody');
-                    tbody.innerHTML = '';
+        // 表头
+        let headerRow = `<tr><th>Reading Type</th>`;
+        regions.forEach(region => {
+          headerRow += `<th>${region}</th>`;
+        });
+        headerRow += `</tr>`;
+        thead.innerHTML = headerRow;
 
-                    // 术语对照（确保中英文匹配）
-                    const termMap = {
-                        'o3_sub_index': ['o3_sub_index', '臭氧分项指数'],
-                        'pm10_twenty_four_hourly': ['pm10_twenty_four_hourly', 'PM10 24小时均值'],
-                        'pm10_sub_index': ['pm10_sub_index', 'PM10分项指数'],
-                        'co_sub_index': ['co_sub_index', '一氧化碳分项指数'],
-                        'pm25_twenty_four_hourly': ['pm25_twenty_four_hourly', 'PM2.5 24小时均值'],
-                        'so2_sub_index': ['so2_sub_index', '二氧化硫分项指数'],
-                        'co_eight_hour_max': ['co_eight_hour_max', '一氧化碳8小时最大值'],
-                        'no2_one_hour_max': ['no2_one_hour_max', '二氧化氮1小时最大值'],
-                        'so2_twenty_four_hourly': ['so2_twenty_four_hourly', '二氧化硫24小时均值'],
-                        'pm25_sub_index': ['pm25_sub_index', 'PM2.5分项指数'],
-                        'psi_twenty_four_hourly': ['psi_twenty_four_hourly', '24小时空气污染指数（PSI）'],
-                        'o3_eight_hour_max': ['o3_eight_hour_max', '臭氧8小时最大值']
-                    };
+        // 每种 readings 一行
+        readingTypes.forEach(type => {
+          let row = `<tr><td>${type}</td>`;
+          regions.forEach(region => {
+            row += `<td>${readings[type][region]}</td>`;
+          });
+          row += `</tr>`;
+          tbody.innerHTML += row;
+        });
 
-                    // 动态生成表格内容
-                    Object.entries(readings).forEach(([type, values]) => {
-                        // 验证区域数据是否存在
-                        const hasAllRegions = regions.every(region => values[region] !== undefined);
-                        if (!hasAllRegions) {
-                            console.warn(`Missing region data for ${type}`);
-                            return;
-                        }
-                        
-                        const [termEn, termZh] = termMap[type] || [type, type];
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td><span class="lang-en">${termEn}</span><span class="lang-zh">${termZh}</span></td>
-                            <td>${values.west}</td>
-                            <td>${values.east}</td>
-                            <td>${values.central}</td>
-                            <td>${values.south}</td>
-                            <td>${values.north}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+      } catch (error) {
+        document.getElementById("updated").innerText = "Failed to load data.";
+        console.error(error);
+      }
+    }
 
-                    // 更新时间戳（来自API响应）
-                    const dataTs = data.items[0].timestamp;
-                    const updateTs = data.items[0].update_timestamp;
-                    
-                    // 选择并更新时间戳元素
-                    const timeElements = document.querySelectorAll('.data-info span');
-                    if (timeElements.length >= 4) {
-                        timeElements[0].innerHTML = `Data Timestamp: <strong>${dataTs}</strong>`;
-                        timeElements[1].innerHTML = `Last Updated: <strong>${updateTs}</strong>`;
-                        timeElements[2].innerHTML = `数据时间戳: <strong>${dataTs}</strong>`;
-                        timeElements[3].innerHTML = `最后更新时间: <strong>${updateTs}</strong>`;
-                    }
+    // 初始化加载
+    loadPSIData();
 
-                    // 恢复按钮状态
-                    refreshBtn.disabled = false;
-                    loadingMsg.style.display = 'none';
-                })
-                .catch(err => {
-                    console.error('Error fetching data:', err);
-                    
-                    // 显示错误信息
-                    errorMsg.style.display = 'block';
-                    errorDetails.innerHTML = `<strong>${isEnglish ? 'Error details:' : '错误详情:'}</strong><br>${err.message}`;
-                    
-                    // 重试逻辑
-                    if (retryCount < maxRetries) {
-                        retryCount++;
-                        errorDetails.innerHTML += `<br><br>${isEnglish ? 'Retrying... (' : '重试中... ('}${retryCount}/${maxRetries})`;
-                        
-                        // 延迟重试
-                        setTimeout(() => {
-                            refreshPSI();
-                        }, 1000 * retryCount); // 指数退避策略
-                    } else {
-                        // 达到最大重试次数，允许用户手动重试
-                        refreshBtn.disabled = false;
-                        loadingMsg.style.display = 'none';
-                        errorDetails.innerHTML += `<br><br>${isEnglish ? 'Maximum retries reached.' : '已达到最大重试次数。'}`;
-                    }
-                });
-            } catch (err) {
-                console.error('Pre-request error:', err);
-                errorMsg.style.display = 'block';
-                errorDetails.innerHTML = `<strong>${isEnglish ? 'Error details:' : '错误详情:'}</strong><br>${err.message}`;
-                refreshBtn.disabled = false;
-                loadingMsg.style.display = 'none';
-            }
-        }
-    </script>
+    // 刷新按钮
+    document.getElementById("refreshBtn").addEventListener("click", loadPSIData);
+  </script>
 </body>
 </html>
+
 
 
