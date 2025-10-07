@@ -71,37 +71,49 @@
 
     <script>
         // Fetch the PSI data from the API
-        fetch('https://api.data.gov.sg/v1/environment/psi')
-            .then(response => response.json())
-            .then(data => {
-                // Hide the loading message
-                document.getElementById('loading').style.display = 'none';
+fetch('https://api.data.gov.sg/v1/environment/psi')
+    .then(response => response.json())
+    .then(data => {
+        // Hide the loading message
+        document.getElementById('loading').style.display = 'none';
 
-                // Show the table
-                document.getElementById('psiTable').style.display = 'table';
+        // Show the table
+        document.getElementById('psiTable').style.display = 'table';
 
-                // Extract readings data
-                const readings = data.items[0].readings;
+        // Extract readings data
+        const readings = data.items[0].readings;
 
-                // Get table body element
-                const tableBody = document.getElementById('dataBody');
+        // Get table body element
+        const tableBody = document.getElementById('dataBody');
 
-                // Loop through the readings and insert rows into the table
-                for (const [key, value] of Object.entries(readings)) {
-                    const row = document.createElement('tr');
+        // Loop through the readings and insert rows into the table
+        for (const [key, value] of Object.entries(readings)) {
+            const row = document.createElement('tr');
 
-                    const cell1 = document.createElement('td');
-                    cell1.textContent = key;
+            const cell1 = document.createElement('td');
+            cell1.textContent = key;
 
-                    const cell2 = document.createElement('td');
-                    cell2.textContent = value;
+            const cell2 = document.createElement('td');
+            // Check if value is an object
+            if (typeof value === 'object') {
+                // Convert object to a string (JSON format)
+                cell2.textContent = JSON.stringify(value, null, 2);
+            } else {
+                // Otherwise, just use the value as is
+                cell2.textContent = value;
+            }
 
-                    row.appendChild(cell1);
-                    row.appendChild(cell2);
-                    tableBody.appendChild(row);
-                }
-            })
-            .catch(error => {
+            row.appendChild(cell1);
+            row.appendChild(cell2);
+            tableBody.appendChild(row);
+        }
+    })
+    .catch(error => {
+        // Handle any errors that occur during the fetch
+        document.getElementById('loading').textContent = 'Failed to load data.';
+        console.error('Error fetching PSI data:', error);
+    });
+
                 // Handle any errors that occur during the fetch
                 document.getElementById('loading').textContent = 'Failed to load data.';
                 console.error('Error fetching PSI data:', error);
