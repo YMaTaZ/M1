@@ -129,9 +129,10 @@
           throw new Error("No items in API response");
         }
         const item = data.items[0];
+        console.log("full data:", data);
         const readings = item.readings;
         const updated = item.update_timestamp;
-
+        console.log("response items[0].update_timestamp:", item.update_timestamp);
         // 显示 API 给的时间戳
         if (updated) {
           apiTsDiv.innerText = `Data timestamp: ${ new Date(updated).toLocaleString() }`;
