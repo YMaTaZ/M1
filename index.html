@@ -47,10 +47,19 @@
     tr:nth-child(even) {
       background-color: #f9f9f9;
     }
-    #updated {
+    #timestamps, #status {
       text-align: center;
       color: #666;
       margin-top: 10px;
+    }
+    #status {
+      margin-bottom: 10px;
+    }
+    .status-ok {
+      color: green;
+    }
+    .status-fail {
+      color: red;
     }
   </style>
 </head>
@@ -59,7 +68,12 @@
 
   <div id="controls">
     <button id="refreshBtn">🔄 Refresh Data</button>
-    <div id="updated">Loading data...</div>
+  </div>
+
+  <div id="status">API Status: —</div>
+  <div id="timestamps">
+    <div id="apiTimestamp">Data timestamp: —</div>
+    <div id="refreshTime">Refreshed at: —</div>
   </div>
 
   <table id="psi-table">
@@ -68,7 +82,6 @@
   </table>
 
   <script>
-    // 这是一组你明确希望显示的字段顺序
     const FIELD_ORDER = [
       "o3_sub_index",
       "pm10_twenty_four_hourly",
@@ -84,46 +97,57 @@
     ];
 
     async function loadPSIData() {
-      const updDiv = document.getElementById("updated");
+      const statusDiv = document.getElementById("status");
+      const apiTsDiv = document.getElementById("apiTimestamp");
+      const refreshDiv = document.getElementById("refreshTime");
       const table = document.getElementById("psi-table");
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
 
-      updDiv.innerText = "Loading data...";
+      // 初始状态显示
+      statusDiv.innerText = "API Status: Loading...";
+      statusDiv.className = "";
+      apiTsDiv.innerText = "Data timestamp: —";
+      refreshDiv.innerText = "Refreshed at: —";
       thead.innerHTML = "";
       tbody.innerHTML = "";
 
       try {
         const resp = await fetch('https://api.data.gov.sg/v1/environment/psi');
         if (!resp.ok) {
-          throw new Error("HTTP error, status = " + resp.status);
+          throw new Error("HTTP status " + resp.status);
         }
         const data = await resp.json();
 
-        // 检查结构
+        // 成功连接
+        statusDiv.innerText = "API Status: Success";
+        statusDiv.classList.add("status-ok");
+
+        console.log("PSI API response:", data);
+
         if (!data.items || data.items.length === 0) {
           throw new Error("No items in API response");
         }
         const item = data.items[0];
-        if (!item.readings) {
-          throw new Error("No readings field in item");
-        }
         const readings = item.readings;
+        const updated = item.update_timestamp;
 
-        const updated = item.update_timestamp || item.update_timestamp;  // fallback 同一个字段
+        // 显示 API 给的时间戳
         if (updated) {
-          updDiv.innerText = `Last updated: ${new Date(updated).toLocaleString()}`;
+          apiTsDiv.innerText = `Data timestamp: ${ new Date(updated).toLocaleString() }`;
         } else {
-          updDiv.innerText = "Last updated: (no timestamp)";
+          apiTsDiv.innerText = "Data timestamp: (none)";
         }
 
-        // 检查 regions
-        if (!readings.psi_twenty_four_hourly) {
-          throw new Error("No psi_twenty_four_hourly field");
+        // 显示刷新动作时间
+        refreshDiv.innerText = `Refreshed at: ${ new Date().toLocaleString() }`;
+
+        if (!readings || !readings.psi_twenty_four_hourly) {
+          throw new Error("Malformed readings data");
         }
         const regions = Object.keys(readings.psi_twenty_four_hourly);
 
-        // 构表头
+        // 构造表头
         let header = `<tr><th>Reading Type</th>`;
         regions.forEach(region => {
           header += `<th>${region}</th>`;
@@ -131,32 +155,30 @@
         header += `</tr>`;
         thead.innerHTML = header;
 
-        // 构造每行
-        let tbodyHtml = "";
-        // 用 FIELD_ORDER 确保顺序；也可以过滤出 readings 中实际有的
+        // 构造表体
+        let bodyHtml = "";
         FIELD_ORDER.forEach(type => {
           if (readings[type]) {
             let row = `<tr><td>${type}</td>`;
             regions.forEach(region => {
-              // 如果这个 region 在这个 type 中没有值，也要处理
               const val = readings[type][region];
               row += `<td>${val !== undefined ? val : ''}</td>`;
             });
             row += `</tr>`;
-            tbodyHtml += row;
+            bodyHtml += row;
           } else {
-            console.warn(`Field ${type} not in readings`);
+            console.warn(`Missing readings field: ${type}`);
           }
         });
-        tbody.innerHTML = tbodyHtml;
+        tbody.innerHTML = bodyHtml;
 
       } catch (err) {
-        updDiv.innerText = "Failed to load data.";
         console.error("Error in loadPSIData:", err);
+        statusDiv.innerText = "API Status: Failed";
+        statusDiv.classList.add("status-fail");
       }
     }
 
-    // 等 DOM 加载完成后再绑定事件和第一次加载
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("refreshBtn").addEventListener("click", loadPSIData);
       loadPSIData();
@@ -164,6 +186,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
