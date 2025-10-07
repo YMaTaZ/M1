@@ -68,60 +68,103 @@
   </table>
 
   <script>
+    // 这是一组你明确希望显示的字段顺序
+    const FIELD_ORDER = [
+      "o3_sub_index",
+      "pm10_twenty_four_hourly",
+      "pm10_sub_index",
+      "co_sub_index",
+      "pm25_twenty_four_hourly",
+      "so2_sub_index",
+      "co_eight_hour_max",
+      "no2_one_hour_max",
+      "so2_twenty_four_hourly",
+      "pm25_sub_index",
+      "psi_twenty_four_hourly"
+    ];
+
     async function loadPSIData() {
+      const updDiv = document.getElementById("updated");
+      const table = document.getElementById("psi-table");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      updDiv.innerText = "Loading data...";
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+
       try {
-        document.getElementById("updated").innerText = "Loading data...";
-        const response = await fetch('https://api.data.gov.sg/v1/environment/psi');
-        const data = await response.json();
+        const resp = await fetch('https://api.data.gov.sg/v1/environment/psi');
+        if (!resp.ok) {
+          throw new Error("HTTP error, status = " + resp.status);
+        }
+        const data = await resp.json();
 
-        const updated = data.items[0].update_timestamp;
-        const readings = data.items[0].readings;
+        // 检查结构
+        if (!data.items || data.items.length === 0) {
+          throw new Error("No items in API response");
+        }
+        const item = data.items[0];
+        if (!item.readings) {
+          throw new Error("No readings field in item");
+        }
+        const readings = item.readings;
 
-        document.getElementById("updated").innerText = `Last updated: ${new Date(updated).toLocaleString()}`;
+        const updated = item.update_timestamp || item.update_timestamp;  // fallback 同一个字段
+        if (updated) {
+          updDiv.innerText = `Last updated: ${new Date(updated).toLocaleString()}`;
+        } else {
+          updDiv.innerText = "Last updated: (no timestamp)";
+        }
 
+        // 检查 regions
+        if (!readings.psi_twenty_four_hourly) {
+          throw new Error("No psi_twenty_four_hourly field");
+        }
         const regions = Object.keys(readings.psi_twenty_four_hourly);
-        const readingTypes = Object.keys(readings);
 
-        const table = document.getElementById("psi-table");
-        const thead = table.querySelector("thead");
-        const tbody = table.querySelector("tbody");
-
-        // 清空旧表格
-        thead.innerHTML = "";
-        tbody.innerHTML = "";
-
-        // 表头
-        let headerRow = `<tr><th>Reading Type</th>`;
+        // 构表头
+        let header = `<tr><th>Reading Type</th>`;
         regions.forEach(region => {
-          headerRow += `<th>${region}</th>`;
+          header += `<th>${region}</th>`;
         });
-        headerRow += `</tr>`;
-        thead.innerHTML = headerRow;
+        header += `</tr>`;
+        thead.innerHTML = header;
 
-        // 每种 readings 一行
-        readingTypes.forEach(type => {
-          let row = `<tr><td>${type}</td>`;
-          regions.forEach(region => {
-            row += `<td>${readings[type][region]}</td>`;
-          });
-          row += `</tr>`;
-          tbody.innerHTML += row;
+        // 构造每行
+        let tbodyHtml = "";
+        // 用 FIELD_ORDER 确保顺序；也可以过滤出 readings 中实际有的
+        FIELD_ORDER.forEach(type => {
+          if (readings[type]) {
+            let row = `<tr><td>${type}</td>`;
+            regions.forEach(region => {
+              // 如果这个 region 在这个 type 中没有值，也要处理
+              const val = readings[type][region];
+              row += `<td>${val !== undefined ? val : ''}</td>`;
+            });
+            row += `</tr>`;
+            tbodyHtml += row;
+          } else {
+            console.warn(`Field ${type} not in readings`);
+          }
         });
+        tbody.innerHTML = tbodyHtml;
 
-      } catch (error) {
-        document.getElementById("updated").innerText = "Failed to load data.";
-        console.error(error);
+      } catch (err) {
+        updDiv.innerText = "Failed to load data.";
+        console.error("Error in loadPSIData:", err);
       }
     }
 
-    // 初始化加载
-    loadPSIData();
-
-    // 刷新按钮
-    document.getElementById("refreshBtn").addEventListener("click", loadPSIData);
+    // 等 DOM 加载完成后再绑定事件和第一次加载
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("refreshBtn").addEventListener("click", loadPSIData);
+      loadPSIData();
+    });
   </script>
 </body>
 </html>
+
 
 
 
