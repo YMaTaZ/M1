@@ -30,10 +30,25 @@
     button:hover {
       background-color: #005fa3;
     }
+    #status {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #666;
+    }
+    .status-ok {
+      color: green;
+    }
+    .status-fail {
+      color: red;
+    }
+    #timestamps {
+      text-align: center;
+      color: #666;
+      margin-bottom: 20px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
       background-color: white;
     }
     th, td {
@@ -46,20 +61,6 @@
     }
     tr:nth-child(even) {
       background-color: #f9f9f9;
-    }
-    #timestamps, #status {
-      text-align: center;
-      color: #666;
-      margin-top: 10px;
-    }
-    #status {
-      margin-bottom: 10px;
-    }
-    .status-ok {
-      color: green;
-    }
-    .status-fail {
-      color: red;
     }
   </style>
 </head>
@@ -96,97 +97,16 @@
       "psi_twenty_four_hourly"
     ];
 
+    // 用来记录上次 API timestamp，以判断这次是否有新的数据
+    loadPSIData.lastTimestamp = null;
+
     async function loadPSIData() {
       const statusDiv = document.getElementById("status");
       const apiTsDiv = document.getElementById("apiTimestamp");
       const refreshDiv = document.getElementById("refreshTime");
       const table = document.getElementById("psi-table");
       const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-
-      // 初始状态显示
-      statusDiv.innerText = "API Status: Loading...";
-      statusDiv.className = "";
-      apiTsDiv.innerText = "Data timestamp: —";
-      refreshDiv.innerText = "Refreshed at: —";
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
-
-      try {
-        const resp = await fetch('https://api.data.gov.sg/v1/environment/psi');
-        if (!resp.ok) {
-          throw new Error("HTTP status " + resp.status);
-        }
-        const data = await resp.json();
-
-        // 成功连接
-        statusDiv.innerText = "API Status: Success";
-        statusDiv.classList.add("status-ok");
-
-        console.log("PSI API response:", data);
-
-        if (!data.items || data.items.length === 0) {
-          throw new Error("No items in API response");
-        }
-        const item = data.items[0];
-        console.log("full data:", data);
-        const readings = item.readings;
-        const updated = item.update_timestamp;
-        console.log("response items[0].update_timestamp:", item.update_timestamp);
-        // 显示 API 给的时间戳
-        if (updated) {
-          apiTsDiv.innerText = `Data timestamp: ${ new Date(updated).toLocaleString() }`;
-        } else {
-          apiTsDiv.innerText = "Data timestamp: (none)";
-        }
-
-        // 显示刷新动作时间
-        refreshDiv.innerText = `Refreshed at: ${ new Date().toLocaleString() }`;
-
-        if (!readings || !readings.psi_twenty_four_hourly) {
-          throw new Error("Malformed readings data");
-        }
-        const regions = Object.keys(readings.psi_twenty_four_hourly);
-
-        // 构造表头
-        let header = `<tr><th>Reading Type</th>`;
-        regions.forEach(region => {
-          header += `<th>${region}</th>`;
-        });
-        header += `</tr>`;
-        thead.innerHTML = header;
-
-        // 构造表体
-        let bodyHtml = "";
-        FIELD_ORDER.forEach(type => {
-          if (readings[type]) {
-            let row = `<tr><td>${type}</td>`;
-            regions.forEach(region => {
-              const val = readings[type][region];
-              row += `<td>${val !== undefined ? val : ''}</td>`;
-            });
-            row += `</tr>`;
-            bodyHtml += row;
-          } else {
-            console.warn(`Missing readings field: ${type}`);
-          }
-        });
-        tbody.innerHTML = bodyHtml;
-
-      } catch (err) {
-        console.error("Error in loadPSIData:", err);
-        statusDiv.innerText = "API Status: Failed";
-        statusDiv.classList.add("status-fail");
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("refreshBtn").addEventListener("click", loadPSIData);
-      loadPSIData();
-    });
-  </script>
-</body>
-</html>
+      const tbody =
 
 
 
